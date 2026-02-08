@@ -72,10 +72,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addNewEvidence = useCallback(async (item: EvidenceItem) => {
-    if (!currentPin) return;
-    await addEvidence(item, currentPin);
-    const items = await loadEvidence(currentPin);
-    setEvidence(items);
+    if (!currentPin) {
+      console.error('addNewEvidence: no currentPin set');
+      return;
+    }
+    try {
+      await addEvidence(item, currentPin);
+      const items = await loadEvidence(currentPin);
+      setEvidence(items);
+    } catch (err) {
+      console.error('addNewEvidence error:', err);
+    }
   }, [currentPin]);
 
   const removeEvidence = useCallback(async (id: string) => {
