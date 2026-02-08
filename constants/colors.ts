@@ -1,12 +1,43 @@
-// template
-const tintColorLight = "#2f95dc";
-
-export default {
-  light: {
-    text: "#000",
-    background: "#fff",
-    tint: tintColorLight,
-    tabIconDefault: "#ccc",
-    tabIconSelected: tintColorLight,
+const Colors = {
+  calculator: {
+    background: '#000000',
+    displayBg: '#000000',
+    displayText: '#FFFFFF',
+    buttonNumber: '#333333',
+    buttonNumberText: '#FFFFFF',
+    buttonOperator: '#FF9F0A',
+    buttonOperatorText: '#FFFFFF',
+    buttonFunction: '#A5A5A5',
+    buttonFunctionText: '#000000',
+    buttonEquals: '#FF9F0A',
+    buttonEqualsText: '#FFFFFF',
+  },
+  vault: {
+    background: '#0A0A0F',
+    surface: '#16161F',
+    surfaceLight: '#1E1E2A',
+    accent: '#00D4AA',
+    accentDim: '#00A888',
+    danger: '#FF4757',
+    warning: '#FFB800',
+    text: '#FFFFFF',
+    textSecondary: '#8E8E9A',
+    textMuted: '#555566',
+    border: '#2A2A3A',
+    cardBg: '#12121A',
+    inputBg: '#1A1A25',
+  },
+  pin: {
+    background: '#0A0A0F',
+    surface: '#16161F',
+    accent: '#00D4AA',
+    dot: '#333344',
+    dotFilled: '#00D4AA',
+    text: '#FFFFFF',
+    textSecondary: '#8E8E9A',
+    keyBg: '#1E1E2A',
+    keyText: '#FFFFFF',
   },
 };
+
+export default Colors;
