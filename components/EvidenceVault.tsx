@@ -31,7 +31,7 @@ import DetailModal from './vault/DetailModal';
 
 export default function EvidenceVault() {
   const insets = useSafeAreaInsets();
-  const { evidence, lockVault, addNewEvidence, removeEvidence, vaultType, setIsCapturingMedia } = useApp();
+  const { evidence, lockVault, addNewEvidence, removeEvidence, vaultType } = useApp();
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [showAudioRecorder, setShowAudioRecorder] = useState(false);
@@ -51,76 +51,64 @@ export default function EvidenceVault() {
   }, [lockVault]);
 
   const handleTakePhoto = useCallback(async () => {
-    setIsCapturingMedia(true);
-
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Grant photo access to collect evidence.');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        quality: 0.9,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const asset = result.assets[0];
-        const persistentUri = await persistMedia(asset.uri, 'photo');
-        const metadata = await buildForensicMetadata('photo', { uri: asset.uri });
-
-        const item: EvidenceItem = {
-          id: generateId(),
-          type: 'photo',
-          title: `Photo Evidence ${new Date().toLocaleDateString()}`,
-          content: persistentUri,
-          timestamp: Date.now(),
-          metadata,
-          encrypted: true,
-        };
-        await addNewEvidence(item);
-      }
-    } finally {
-      setIsCapturingMedia(false);
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Grant photo access to collect evidence.');
+      return;
     }
-  }, [addNewEvidence, setIsCapturingMedia]);
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.9,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      const persistentUri = await persistMedia(asset.uri, 'photo');
+      const metadata = await buildForensicMetadata('photo', { uri: asset.uri });
+
+      const item: EvidenceItem = {
+        id: generateId(),
+        type: 'photo',
+        title: `Photo Evidence ${new Date().toLocaleDateString()}`,
+        content: persistentUri,
+        timestamp: Date.now(),
+        metadata,
+        encrypted: true,
+      };
+      await addNewEvidence(item);
+    }
+  }, [addNewEvidence]);
 
   const handleRecordVideo = useCallback(async () => {
-    setIsCapturingMedia(true);
-
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Grant camera access to record evidence.');
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['videos'],
-        quality: 1,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const asset = result.assets[0];
-        const persistentUri = await persistMedia(asset.uri, 'video');
-        const metadata = await buildForensicMetadata('video', { uri: asset.uri });
-
-        const item: EvidenceItem = {
-          id: generateId(),
-          type: 'video',
-          title: `Video Evidence ${new Date().toLocaleDateString()}`,
-          content: persistentUri,
-          timestamp: Date.now(),
-          metadata,
-          encrypted: true,
-        };
-        await addNewEvidence(item);
-      }
-    } finally {
-      setIsCapturingMedia(false);
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Grant camera access to record evidence.');
+      return;
     }
-  }, [addNewEvidence, setIsCapturingMedia]);
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['videos'],
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      const persistentUri = await persistMedia(asset.uri, 'video');
+      const metadata = await buildForensicMetadata('video', { uri: asset.uri });
+
+      const item: EvidenceItem = {
+        id: generateId(),
+        type: 'video',
+        title: `Video Evidence ${new Date().toLocaleDateString()}`,
+        content: persistentUri,
+        timestamp: Date.now(),
+        metadata,
+        encrypted: true,
+      };
+      await addNewEvidence(item);
+    }
+  }, [addNewEvidence]);
 
   const handleAudioSaved = useCallback(async (uri: string, durationMs: number) => {
     const persistentUri = await persistMedia(uri, 'audio');
@@ -265,7 +253,6 @@ export default function EvidenceVault() {
         visible={showAudioRecorder}
         onClose={() => setShowAudioRecorder(false)}
         onSave={handleAudioSaved}
-        setIsCapturingMedia={setIsCapturingMedia}
       />
       <DetailModal
         item={viewingItem}

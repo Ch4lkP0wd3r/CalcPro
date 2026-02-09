@@ -1,10 +1,10 @@
 // Made by Dhairya Singh Dhaila
-import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode, useCallback } from 'react';
 import { AppMode, EvidenceItem } from './types';
 import { isAppSetup, verifyPin, loadEvidence, addEvidence, deleteEvidence, saveConfig } from './storage';
 import { hashPin } from './encryption';
 import { deleteMedia } from './media';
-import { AppState, Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
 import { Accelerometer } from 'expo-sensors';
 
 interface AppContextValue {
@@ -20,7 +20,6 @@ interface AppContextValue {
   removeEvidence: (id: string) => Promise<void>;
   refreshEvidence: () => Promise<void>;
   vaultType: 'secret' | 'decoy' | null;
-  setIsCapturingMedia: (capturing: boolean) => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -31,7 +30,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [evidence, setEvidence] = useState<EvidenceItem[]>([]);
   const [currentPin, setCurrentPin] = useState('');
   const [vaultType, setVaultType] = useState<'secret' | 'decoy' | null>(null);
-  const isCapturingMediaRef = useRef(false);
 
   useEffect(() => {
     checkSetup();
@@ -71,18 +69,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setVaultType(null);
   }, []);
 
-  // Feature: Auto-Lock on Background
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', nextAppState => {
-      if (nextAppState.match(/inactive|background/) && mode === 'vault' && !isCapturingMediaRef.current) {
-        lockVault();
-      }
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, [mode, lockVault]);
+  // Feature: Auto-Lock on Background - DISABLED
+  // This feature conflicts with media capture (camera/audio recorder)
+  // Users can still use shake-to-lock (accelerometer) or manual double-tap to lock the vault
 
   // Feature: Shake-to-Lock Panic Gesture
   useEffect(() => {
@@ -118,11 +107,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return;
     }
     try {
+      console.log('[addNewEvidence] Starting save for:', item.type, item.title);
       await addEvidence(item, currentPin, vaultType);
+      console.log('[addNewEvidence] Save successful, reloading evidence...');
       const items = await loadEvidence(currentPin, vaultType);
-      setEvidence(items || []); // Handle null case
+      console.log('[addNewEvidence] Loaded items:', items ? items.length : 'null');
+      if (items === null) {
+        console.error('[addNewEvidence] loadEvidence returned null!');
+        Alert.alert('Error', 'Failed to reload vault after saving. Please lock and unlock the vault to refresh.');
+        return;
+      }
+      setEvidence(items);
+      console.log('[addNewEvidence] Evidence state updated with', items.length, 'items');
     } catch (err) {
       console.error('addNewEvidence error:', err);
+      Alert.alert('Save Failed', `Could not save evidence: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   }, [currentPin, vaultType]);
 
@@ -146,10 +145,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setEvidence(items || []); // Handle null case
   }, [currentPin, vaultType]);
 
-  const setIsCapturingMedia = useCallback((capturing: boolean) => {
-    isCapturingMediaRef.current = capturing;
-  }, []);
-
   const value = useMemo(() => ({
     mode,
     setMode,
@@ -163,8 +158,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addNewEvidence,
     removeEvidence,
     refreshEvidence,
-    setIsCapturingMedia,
-  }), [mode, isLoading, evidence, currentPin, vaultType, unlockVault, lockVault, setupPins, addNewEvidence, removeEvidence, refreshEvidence, setIsCapturingMedia]);
+  }), [mode, isLoading, evidence, currentPin, vaultType, unlockVault, lockVault, setupPins, addNewEvidence, removeEvidence, refreshEvidence]);
 
   return (
     <AppContext.Provider value={value}>
