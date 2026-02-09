@@ -31,9 +31,10 @@ interface AudioRecorderPanelProps {
     visible: boolean;
     onClose: () => void;
     onSave: (uri: string, durationMs: number) => void;
+    setIsCapturingMedia: (capturing: boolean) => void;
 }
 
-const AudioRecorderPanel = memo(({ visible, onClose, onSave }: AudioRecorderPanelProps) => {
+const AudioRecorderPanel = memo(({ visible, onClose, onSave, setIsCapturingMedia }: AudioRecorderPanelProps) => {
     const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
     const recorderState = useAudioRecorderState(audioRecorder, 200);
     const [hasPermission, setHasPermission] = useState(false);
@@ -46,6 +47,7 @@ const AudioRecorderPanel = memo(({ visible, onClose, onSave }: AudioRecorderPane
 
     useEffect(() => {
         if (visible) {
+            setIsCapturingMedia(true);
             (async () => {
                 const status = await AudioModule.requestRecordingPermissionsAsync();
                 setHasPermission(status.granted);
@@ -53,8 +55,10 @@ const AudioRecorderPanel = memo(({ visible, onClose, onSave }: AudioRecorderPane
                     Alert.alert('Permission Required', 'Microphone access is needed to record audio evidence.');
                 }
             })();
+        } else {
+            setIsCapturingMedia(false);
         }
-    }, [visible]);
+    }, [visible, setIsCapturingMedia]);
 
     useEffect(() => {
         if (isActive) {

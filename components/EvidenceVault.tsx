@@ -31,7 +31,7 @@ import DetailModal from './vault/DetailModal';
 
 export default function EvidenceVault() {
   const insets = useSafeAreaInsets();
-  const { evidence, lockVault, addNewEvidence, removeEvidence, vaultType } = useApp();
+  const { evidence, lockVault, addNewEvidence, removeEvidence, vaultType, setIsCapturingMedia } = useApp();
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [showAudioRecorder, setShowAudioRecorder] = useState(false);
@@ -57,28 +57,33 @@ export default function EvidenceVault() {
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.9,
-    });
+    setIsCapturingMedia(true);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.9,
+      });
 
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      const asset = result.assets[0];
-      const persistentUri = await persistMedia(asset.uri, 'photo');
-      const metadata = await buildForensicMetadata('photo', { uri: asset.uri });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const persistentUri = await persistMedia(asset.uri, 'photo');
+        const metadata = await buildForensicMetadata('photo', { uri: asset.uri });
 
-      const item: EvidenceItem = {
-        id: generateId(),
-        type: 'photo',
-        title: `Photo Evidence ${new Date().toLocaleDateString()}`,
-        content: persistentUri,
-        timestamp: Date.now(),
-        metadata,
-        encrypted: true,
-      };
-      await addNewEvidence(item);
+        const item: EvidenceItem = {
+          id: generateId(),
+          type: 'photo',
+          title: `Photo Evidence ${new Date().toLocaleDateString()}`,
+          content: persistentUri,
+          timestamp: Date.now(),
+          metadata,
+          encrypted: true,
+        };
+        await addNewEvidence(item);
+      }
+    } finally {
+      setIsCapturingMedia(false);
     }
-  }, [addNewEvidence]);
+  }, [addNewEvidence, setIsCapturingMedia]);
 
   const handleRecordVideo = useCallback(async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -87,28 +92,33 @@ export default function EvidenceVault() {
       return;
     }
 
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['videos'],
-      quality: 1,
-    });
+    setIsCapturingMedia(true);
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['videos'],
+        quality: 1,
+      });
 
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      const asset = result.assets[0];
-      const persistentUri = await persistMedia(asset.uri, 'video');
-      const metadata = await buildForensicMetadata('video', { uri: asset.uri });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const persistentUri = await persistMedia(asset.uri, 'video');
+        const metadata = await buildForensicMetadata('video', { uri: asset.uri });
 
-      const item: EvidenceItem = {
-        id: generateId(),
-        type: 'video',
-        title: `Video Evidence ${new Date().toLocaleDateString()}`,
-        content: persistentUri,
-        timestamp: Date.now(),
-        metadata,
-        encrypted: true,
-      };
-      await addNewEvidence(item);
+        const item: EvidenceItem = {
+          id: generateId(),
+          type: 'video',
+          title: `Video Evidence ${new Date().toLocaleDateString()}`,
+          content: persistentUri,
+          timestamp: Date.now(),
+          metadata,
+          encrypted: true,
+        };
+        await addNewEvidence(item);
+      }
+    } finally {
+      setIsCapturingMedia(false);
     }
-  }, [addNewEvidence]);
+  }, [addNewEvidence, setIsCapturingMedia]);
 
   const handleAudioSaved = useCallback(async (uri: string, durationMs: number) => {
     const persistentUri = await persistMedia(uri, 'audio');
@@ -253,6 +263,7 @@ export default function EvidenceVault() {
         visible={showAudioRecorder}
         onClose={() => setShowAudioRecorder(false)}
         onSave={handleAudioSaved}
+        setIsCapturingMedia={setIsCapturingMedia}
       />
       <DetailModal
         item={viewingItem}

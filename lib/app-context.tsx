@@ -20,6 +20,7 @@ interface AppContextValue {
   removeEvidence: (id: string) => Promise<void>;
   refreshEvidence: () => Promise<void>;
   vaultType: 'secret' | 'decoy' | null;
+  setIsCapturingMedia: (capturing: boolean) => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -30,6 +31,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [evidence, setEvidence] = useState<EvidenceItem[]>([]);
   const [currentPin, setCurrentPin] = useState('');
   const [vaultType, setVaultType] = useState<'secret' | 'decoy' | null>(null);
+  const [isCapturingMedia, setIsCapturingMedia] = useState(false);
 
   useEffect(() => {
     checkSetup();
@@ -72,7 +74,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Feature: Auto-Lock on Background
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextAppState => {
-      if (nextAppState.match(/inactive|background/) && mode === 'vault') {
+      if (nextAppState.match(/inactive|background/) && mode === 'vault' && !isCapturingMedia) {
         lockVault();
       }
     });
@@ -80,7 +82,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.remove();
     };
-  }, [mode, lockVault]);
+  }, [mode, lockVault, isCapturingMedia]);
 
   // Feature: Shake-to-Lock Panic Gesture
   useEffect(() => {
@@ -157,6 +159,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addNewEvidence,
     removeEvidence,
     refreshEvidence,
+    setIsCapturingMedia,
   }), [mode, isLoading, evidence, currentPin, vaultType, unlockVault, lockVault, setupPins, addNewEvidence, removeEvidence, refreshEvidence]);
 
   return (
