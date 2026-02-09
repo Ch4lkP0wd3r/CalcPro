@@ -1,3 +1,4 @@
+// Made by Dhairya Singh Dhaila
 import { type User, type InsertUser } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -29,7 +30,11 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
-    const user: User = { ...insertUser, id };
+    const user: User = {
+      id,
+      username: insertUser.username,
+      password: insertUser.password,
+    };
     this.users.set(id, user);
     return user;
   }

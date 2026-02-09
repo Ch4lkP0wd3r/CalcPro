@@ -1,3 +1,4 @@
+// Made by Dhairya Singh Dhaila
 import React, { useState, useCallback, useRef } from 'react';
 import {
   StyleSheet,
@@ -213,6 +214,7 @@ export default function Calculator() {
     if (previousValue !== null && operation) {
       const currentValue = parseFloat(display);
       const result = calculate(previousValue, operation, currentValue);
+
 
       displayOpacity.value = withTiming(0.5, { duration: 50 }, () => {
         displayOpacity.value = withTiming(1, { duration: 150 });

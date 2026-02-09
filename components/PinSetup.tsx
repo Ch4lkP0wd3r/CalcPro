@@ -1,3 +1,4 @@
+// Made by Dhairya Singh Dhaila
 import React, { useState, useCallback } from 'react';
 import {
   StyleSheet,
@@ -28,7 +29,7 @@ function PinDot({ filled }: { filled: boolean }) {
 
   React.useEffect(() => {
     scale.value = withSpring(filled ? 1 : 0.6, { damping: 12 });
-  }, [filled]);
+  }, [filled, scale]);
 
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],

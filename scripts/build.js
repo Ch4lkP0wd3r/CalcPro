@@ -1,3 +1,4 @@
+// Made by Dhairya Singh Dhaila
 const fs = require("fs");
 const path = require("path");
 const { spawn } = require("child_process");
@@ -517,7 +518,7 @@ async function main() {
       reject(
         new Error(
           `Overall download timeout after ${downloadTimeout / 1000} seconds. ` +
-            "Metro may be struggling to generate bundles. Check Metro logs above.",
+          "Metro may be struggling to generate bundles. Check Metro logs above.",
         ),
       );
     }, downloadTimeout);

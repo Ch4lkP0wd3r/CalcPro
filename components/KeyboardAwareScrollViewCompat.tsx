@@ -1,3 +1,5 @@
+// Made by Dhairya Singh Dhaila
+import React from 'react';
 // template
 import { Platform, ScrollView, ScrollViewProps } from "react-native";
 import {

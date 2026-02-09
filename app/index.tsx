@@ -1,3 +1,4 @@
+// Made by Dhairya Singh Dhaila
 import React from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';

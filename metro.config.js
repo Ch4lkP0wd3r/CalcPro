@@ -1,3 +1,4 @@
+// Made by Dhairya Singh Dhaila
 const { getDefaultConfig } = require("expo/metro-config");
 
 const config = getDefaultConfig(__dirname);

@@ -1,3 +1,4 @@
+// Made by Dhairya Singh Dhaila
 export function redirectSystemPath({
   path,
   initial,

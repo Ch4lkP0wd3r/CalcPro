@@ -1,3 +1,4 @@
+// Made by Dhairya Singh Dhaila
 const { defineConfig } = require('eslint/config');
 const expoConfig = require('eslint-config-expo/flat');
 

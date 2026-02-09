@@ -1,4 +1,5 @@
 import CryptoJS from 'crypto-js';
+// Made by Dhairya Singh Dhaila
 import * as Crypto from 'expo-crypto';
 
 const SALT_LENGTH = 16;

@@ -1,4 +1,4 @@
-// template
+// Made by Dhairya Singh Dhaila
 import { Link, Stack } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 

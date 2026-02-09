@@ -1,3 +1,4 @@
+// Made by Dhairya Singh Dhaila
 import * as Device from 'expo-device';
 import * as Crypto from 'expo-crypto';
 import { Platform } from 'react-native';

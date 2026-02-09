@@ -1,7 +1,11 @@
+// Made by Dhairya Singh Dhaila
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode, useCallback } from 'react';
 import { AppMode, EvidenceItem } from './types';
 import { isAppSetup, verifyPin, loadEvidence, addEvidence, deleteEvidence, saveConfig } from './storage';
 import { hashPin } from './encryption';
+import { deleteMedia } from './media';
+import { AppState, Platform } from 'react-native';
+import { Accelerometer } from 'expo-sensors';
 
 interface AppContextValue {
   mode: AppMode;
@@ -15,6 +19,7 @@ interface AppContextValue {
   addNewEvidence: (item: EvidenceItem) => Promise<void>;
   removeEvidence: (id: string) => Promise<void>;
   refreshEvidence: () => Promise<void>;
+  vaultType: 'secret' | 'decoy' | null;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -24,6 +29,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [evidence, setEvidence] = useState<EvidenceItem[]>([]);
   const [currentPin, setCurrentPin] = useState('');
+  const [vaultType, setVaultType] = useState<'secret' | 'decoy' | null>(null);
 
   useEffect(() => {
     checkSetup();
@@ -42,11 +48,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
+
   const unlockVault = useCallback(async (pin: string): Promise<boolean> => {
     const result = await verifyPin(pin);
-    if (result === 'secret') {
+    if (result === 'secret' || result === 'decoy') {
       setCurrentPin(pin);
-      const items = await loadEvidence(pin);
+      setVaultType(result);
+      const items = await loadEvidence(pin, result);
       setEvidence(items);
       setMode('vault');
       return true;
@@ -58,7 +66,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setMode('calculator');
     setCurrentPin('');
     setEvidence([]);
+    setVaultType(null);
   }, []);
+
+  // Feature: Auto-Lock on Background
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (nextAppState.match(/inactive|background/) && mode === 'vault') {
+        lockVault();
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [mode, lockVault]);
+
+  // Feature: Shake-to-Lock Panic Gesture
+  useEffect(() => {
+    let subscription: any;
+    if (mode === 'vault' && Platform.OS !== 'web') {
+      subscription = Accelerometer.addListener(({ x, y, z }) => {
+        const acceleration = Math.sqrt(x * x + y * y + z * z);
+        if (acceleration > 1.5) { // Ultra-sensitive: approx 0.5G above gravity
+          lockVault();
+        }
+      });
+      Accelerometer.setUpdateInterval(100);
+    }
+    return () => {
+      if (subscription) subscription.remove();
+    };
+  }, [mode, lockVault]);
 
   const setupPins = useCallback(async (secretPin: string, decoyPin: string) => {
     const secretHash = await hashPin(secretPin);
@@ -72,31 +111,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addNewEvidence = useCallback(async (item: EvidenceItem) => {
-    if (!currentPin) {
-      console.error('addNewEvidence: no currentPin set');
+    if (!currentPin || !vaultType) {
+      console.error('addNewEvidence: missing pin or vaultType');
       return;
     }
     try {
-      await addEvidence(item, currentPin);
-      const items = await loadEvidence(currentPin);
+      await addEvidence(item, currentPin, vaultType);
+      const items = await loadEvidence(currentPin, vaultType);
       setEvidence(items);
     } catch (err) {
       console.error('addNewEvidence error:', err);
     }
-  }, [currentPin]);
+  }, [currentPin, vaultType]);
 
   const removeEvidence = useCallback(async (id: string) => {
-    if (!currentPin) return;
-    await deleteEvidence(id, currentPin);
-    const items = await loadEvidence(currentPin);
+    if (!currentPin || !vaultType) return;
+
+    // Find the item to get its URI before deleting
+    const item = evidence.find(i => i.id === id);
+    if (item && item.content && (item.type === 'photo' || item.type === 'video' || item.type === 'audio')) {
+      await deleteMedia(item.content);
+    }
+
+    await deleteEvidence(id, currentPin, vaultType);
+    const items = await loadEvidence(currentPin, vaultType);
     setEvidence(items);
-  }, [currentPin]);
+  }, [currentPin, evidence, vaultType]);
 
   const refreshEvidence = useCallback(async () => {
-    if (!currentPin) return;
-    const items = await loadEvidence(currentPin);
+    if (!currentPin || !vaultType) return;
+    const items = await loadEvidence(currentPin, vaultType);
     setEvidence(items);
-  }, [currentPin]);
+  }, [currentPin, vaultType]);
 
   const value = useMemo(() => ({
     mode,
@@ -104,13 +150,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     isLoading,
     evidence,
     currentPin,
+    vaultType,
     unlockVault,
     lockVault,
     setupPins,
     addNewEvidence,
     removeEvidence,
     refreshEvidence,
-  }), [mode, isLoading, evidence, currentPin, unlockVault, lockVault, setupPins, addNewEvidence, removeEvidence, refreshEvidence]);
+  }), [mode, isLoading, evidence, currentPin, vaultType, unlockVault, lockVault, setupPins, addNewEvidence, removeEvidence, refreshEvidence]);
 
   return (
     <AppContext.Provider value={value}>
