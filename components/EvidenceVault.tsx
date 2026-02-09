@@ -51,14 +51,15 @@ export default function EvidenceVault() {
   }, [lockVault]);
 
   const handleTakePhoto = useCallback(async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Grant photo access to collect evidence.');
-      return;
-    }
-
     setIsCapturingMedia(true);
+
     try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Grant photo access to collect evidence.');
+        return;
+      }
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         quality: 0.9,
@@ -86,14 +87,15 @@ export default function EvidenceVault() {
   }, [addNewEvidence, setIsCapturingMedia]);
 
   const handleRecordVideo = useCallback(async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Grant camera access to record evidence.');
-      return;
-    }
-
     setIsCapturingMedia(true);
+
     try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Grant camera access to record evidence.');
+        return;
+      }
+
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['videos'],
         quality: 1,
