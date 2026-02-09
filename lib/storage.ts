@@ -143,21 +143,19 @@ export async function loadEvidence(pin: string, type: 'secret' | 'decoy'): Promi
       return [];
     }
 
+    console.log(`[Storage] Found encrypted data for ${type}, length:`, encrypted.length);
+
     const decrypted = decrypt(encrypted, pin);
+
     if (!decrypted) {
-      console.warn(`[Storage] Decryption failed for ${type} vault. Wrong PIN or corrupted data?`);
+      console.error(`[Storage] Decryption failed for ${type} vault - wrong PIN or corrupted data`);
       return null; // Return null to indicate error, avoid overwriting
     }
 
-    let items: EvidenceItem[];
-    try {
-      items = JSON.parse(decrypted);
-    } catch (e) {
-      console.error('[Storage] JSON parse failed during load:', e);
-      return null;
-    }
+    console.log(`[Storage] Decrypted data for ${type}, length:`, decrypted.length);
 
-    console.log(`[Storage] Loaded ${items.length} items from ${type} vault.`);
+    const items: EvidenceItem[] = JSON.parse(decrypted);
+    console.log(`[Storage] Successfully loaded ${items.length} items from ${type} vault`);
 
     // Auto-Migration
     if (!fileInfo.exists) {
