@@ -22,10 +22,26 @@ function getEvidenceKey(type: 'secret' | 'decoy') {
   return type === 'secret' ? KEYS.EVIDENCE_SECRET : KEYS.EVIDENCE_DECOY;
 }
 
+// Cache the document directory to avoid intermittent null issues
+let cachedDocumentDirectory: string | null = null;
+
 function getEvidenceFilePath(type: 'secret' | 'decoy'): string | null {
   const fs: any = FileSystem;
-  if (!fs.documentDirectory) return null;
-  return `${fs.documentDirectory}vault_data_${type}.enc`;
+
+  // Use cached value if available
+  if (cachedDocumentDirectory) {
+    return `${cachedDocumentDirectory}vault_data_${type}.enc`;
+  }
+
+  // Try to get and cache it
+  if (fs.documentDirectory) {
+    cachedDocumentDirectory = fs.documentDirectory;
+    console.log('[Storage] Cached documentDirectory:', cachedDocumentDirectory);
+    return `${cachedDocumentDirectory}vault_data_${type}.enc`;
+  }
+
+  console.error('[Storage] FileSystem.documentDirectory is null!');
+  return null;
 }
 
 export async function saveConfig(config: AppConfig): Promise<void> {
@@ -106,7 +122,7 @@ export async function loadEvidence(pin: string, type: 'secret' | 'decoy'): Promi
   try {
     const filePath = getEvidenceFilePath(type);
     if (!filePath) {
-      console.error('[Storage] loadEvidence failed: FileSystem available');
+      console.error('[Storage] loadEvidence failed: FileSystem.documentDirectory not available');
       return null;
     }
 
