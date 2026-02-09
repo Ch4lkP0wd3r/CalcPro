@@ -1,5 +1,5 @@
 // Made by Dhairya Singh Dhaila
-import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode, useCallback, useRef } from 'react';
 import { AppMode, EvidenceItem } from './types';
 import { isAppSetup, verifyPin, loadEvidence, addEvidence, deleteEvidence, saveConfig } from './storage';
 import { hashPin } from './encryption';
@@ -31,7 +31,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [evidence, setEvidence] = useState<EvidenceItem[]>([]);
   const [currentPin, setCurrentPin] = useState('');
   const [vaultType, setVaultType] = useState<'secret' | 'decoy' | null>(null);
-  const [isCapturingMedia, setIsCapturingMedia] = useState(false);
+  const isCapturingMediaRef = useRef(false);
 
   useEffect(() => {
     checkSetup();
@@ -74,7 +74,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Feature: Auto-Lock on Background
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextAppState => {
-      if (nextAppState.match(/inactive|background/) && mode === 'vault' && !isCapturingMedia) {
+      if (nextAppState.match(/inactive|background/) && mode === 'vault' && !isCapturingMediaRef.current) {
         lockVault();
       }
     });
@@ -82,7 +82,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.remove();
     };
-  }, [mode, lockVault, isCapturingMedia]);
+  }, [mode, lockVault]);
 
   // Feature: Shake-to-Lock Panic Gesture
   useEffect(() => {
@@ -146,6 +146,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setEvidence(items || []); // Handle null case
   }, [currentPin, vaultType]);
 
+  const setIsCapturingMedia = useCallback((capturing: boolean) => {
+    isCapturingMediaRef.current = capturing;
+  }, []);
+
   const value = useMemo(() => ({
     mode,
     setMode,
@@ -160,7 +164,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     removeEvidence,
     refreshEvidence,
     setIsCapturingMedia,
-  }), [mode, isLoading, evidence, currentPin, vaultType, unlockVault, lockVault, setupPins, addNewEvidence, removeEvidence, refreshEvidence]);
+  }), [mode, isLoading, evidence, currentPin, vaultType, unlockVault, lockVault, setupPins, addNewEvidence, removeEvidence, refreshEvidence, setIsCapturingMedia]);
 
   return (
     <AppContext.Provider value={value}>
