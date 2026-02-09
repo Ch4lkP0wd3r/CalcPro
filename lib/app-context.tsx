@@ -55,7 +55,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setCurrentPin(pin);
       setVaultType(result);
       const items = await loadEvidence(pin, result);
-      setEvidence(items);
+      setEvidence(items || []); // Handle null case
       setMode('vault');
       return true;
     }
@@ -118,7 +118,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       await addEvidence(item, currentPin, vaultType);
       const items = await loadEvidence(currentPin, vaultType);
-      setEvidence(items);
+      setEvidence(items || []); // Handle null case
     } catch (err) {
       console.error('addNewEvidence error:', err);
     }
@@ -135,13 +135,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     await deleteEvidence(id, currentPin, vaultType);
     const items = await loadEvidence(currentPin, vaultType);
-    setEvidence(items);
+    setEvidence(items || []); // Handle null case
   }, [currentPin, evidence, vaultType]);
 
   const refreshEvidence = useCallback(async () => {
     if (!currentPin || !vaultType) return;
     const items = await loadEvidence(currentPin, vaultType);
-    setEvidence(items);
+    setEvidence(items || []); // Handle null case
   }, [currentPin, vaultType]);
 
   const value = useMemo(() => ({

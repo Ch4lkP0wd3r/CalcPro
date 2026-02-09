@@ -83,7 +83,7 @@ const DetailModal = memo(({ item, onClose }: DetailModalProps) => {
                 return (
                     <View style={styles.mediaPreviewContainer}>
                         <Image
-                            source={{ uri: absUri }}
+                            source={{ uri: absUri || undefined }}
                             style={styles.imagePreview}
                             contentFit="contain"
                             transition={200}

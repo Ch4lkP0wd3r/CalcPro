@@ -109,7 +109,7 @@ const EvidenceCard = memo(({ item, onDelete, onView }: EvidenceCardProps) => {
                 <View style={styles.cardIcon}>
                     {item.type === 'photo' && item.content ? (
                         <Image
-                            source={{ uri: getAbsoluteUri(item.content) }}
+                            source={{ uri: getAbsoluteUri(item.content) || undefined }}
                             style={styles.thumbnail}
                             contentFit="cover"
                             transition={200}

@@ -1,16 +1,33 @@
 import * as FileSystem from 'expo-file-system';
 import { Platform } from 'react-native';
 
-// Use a type-safe way to access FileSystem properties to avoid lint issues with some Expo versions
 const fs: any = FileSystem;
-const VAULT_DIRECTORY = fs.documentDirectory ? `${fs.documentDirectory}vault/` : null;
+
+/**
+ * Gets the base document directory safely.
+ * On some Android versions/conditions, documentDirectory can be null initially.
+ */
+function getDocumentDirectory(): string | null {
+    return fs.documentDirectory;
+}
+
+/**
+ * Gets the vault directory path.
+ */
+export function getVaultDirectory(): string | null {
+    const docDir = getDocumentDirectory();
+    if (!docDir || Platform.OS === 'web') return null;
+    return `${docDir}vault/`;
+}
 
 export async function ensureVaultDirectory() {
-    if (!VAULT_DIRECTORY || Platform.OS === 'web') return;
+    const vaultDir = getVaultDirectory();
+    if (!vaultDir) return;
+
     try {
-        const dirInfo = await fs.getInfoAsync(VAULT_DIRECTORY);
+        const dirInfo = await fs.getInfoAsync(vaultDir);
         if (!dirInfo.exists) {
-            await fs.makeDirectoryAsync(VAULT_DIRECTORY, { intermediates: true });
+            await fs.makeDirectoryAsync(vaultDir, { intermediates: true });
         }
     } catch (error) {
         console.error('[Media] Failed to ensure vault directory:', error);
@@ -24,22 +41,24 @@ export async function ensureVaultDirectory() {
 export async function persistMedia(tempUri: string, type: 'photo' | 'video' | 'audio'): Promise<string> {
     if (Platform.OS === 'web') return tempUri;
 
-    await ensureVaultDirectory();
-    if (!VAULT_DIRECTORY) return tempUri;
+    const vaultDir = getVaultDirectory();
+    if (!vaultDir) {
+        console.error('[Media] Cannot persist: vault directory not available');
+        return tempUri;
+    }
 
-    let finalUri = tempUri;
+    await ensureVaultDirectory();
 
     // For photos, we might want to do some processing, but for now we just copy
     const extension = type === 'photo' ? 'jpg' : type === 'video' ? 'mp4' : 'm4a';
     const filename = `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${extension}`;
-    const persistentUri = `${VAULT_DIRECTORY}${filename}`;
+    const persistentUri = `${vaultDir}${filename}`;
 
     try {
         await fs.copyAsync({
-            from: finalUri,
+            from: tempUri,
             to: persistentUri,
         });
-        // Return only the filename to ensure persistence across app movements
         return filename;
     } catch (error) {
         console.error('[Media] Failed to persist media:', error);
@@ -51,6 +70,8 @@ export async function deleteMedia(uri: string): Promise<void> {
     if (Platform.OS === 'web') return;
     try {
         const fullUri = getAbsoluteUri(uri);
+        if (!fullUri) return;
+
         const info = await fs.getInfoAsync(fullUri);
         if (info.exists) {
             await fs.deleteAsync(fullUri);
@@ -63,11 +84,17 @@ export async function deleteMedia(uri: string): Promise<void> {
 /**
  * Gets the absolute URI from a stored relative filename
  */
-export function getAbsoluteUri(relativeUri: string): string {
-    if (!relativeUri) return '';
+export function getAbsoluteUri(relativeUri: string): string | null {
+    if (!relativeUri) return null;
     if (relativeUri.startsWith('file://') || relativeUri.startsWith('content://') || relativeUri.startsWith('http')) {
         return relativeUri;
     }
-    if (!VAULT_DIRECTORY) return relativeUri;
-    return `${VAULT_DIRECTORY}${relativeUri}`;
+
+    const vaultDir = getVaultDirectory();
+    if (!vaultDir) {
+        console.warn('[Media] getAbsoluteUri: Vault directory not available for', relativeUri);
+        return null;
+    }
+
+    return `${vaultDir}${relativeUri}`;
 }
